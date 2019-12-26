@@ -1,0 +1,182 @@
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+How to Install Apache ActiveMQ on Ubuntu 16.04
+
+Apache ActiveMQ is an free and open source message broker, Developed by: Apache Software Foundation, Written in C, C++, Java, Ruby, Perl, Python, PHP, C#. 
+
+Installing JAVA
+
+sudo -i
+apt-get update
+apt-get install default-jdk -y
+
+Downloading Apacha Active-MQ
+
+wget -c "http://www.apache.org/dyn/closer.cgi?filename=/activemq/5.15.11/apache-activemq-5.15.11-bin.tar.gz&action=download" -O apache-activemq-5.15.11-bin.tar.gz
+
+Extract Apache-activeMQ
+
+tar xzf apache-activemq-5.15.11-bin.tar.gz
+
+Rename the Apache-ActiveMQ
+
+mv apache-activemq-5.15.11 activemq
+
+We will create user and group named activemq that will be used to run ActiveMQ. Create the group first
+
+addgroup --quiet --system activemq
+
+Create activemq system user.
+
+adduser --quiet --system --ingroup activemq --no-create-home --disabled-password activemq
+
+Modify /etc/passwd entry to change home and group for activemq user.
+
+usermod -c "ActiveMQ Broker" -d /opt/activemq -g activemq activemq
+
+Change ownership of /opt/activemq directory to user activemq and group activemq.
+
+chown -R activemq:activemq /opt/activemq
+
+Change the permission of /opt/activemq directory.
+
+chmod u=rwx,g=rxs,o= /opt/activemq
+
+Configure ActiveMQ
+
+cp /opt/activemq/bin/env /etc/default/activemq
+
+Change the ownership of /etc/default/activemq file to user and group root.
+
+chown root:root /etc/default/activemq
+
+Now let's start configuring ActiveMQ. Open /etc/default/activemq file.
+
+# ACTIVEMQ_HOME="<Installationdir>/"
+# ACTIVEMQ_BASE="$ACTIVEMQ_HOME"
+# ACTIVEMQ_CONF="$ACTIVEMQ_BASE/conf"
+# ACTIVEMQ_DATA="$ACTIVEMQ_BASE/data"
+# ACTIVEMQ_TMP="$ACTIVEMQ_BASE/tmp"
+
+
+Changes 
+
+ACTIVEMQ_HOME="/opt/activemq/"
+ACTIVEMQ_BASE="$ACTIVEMQ_HOME"
+ACTIVEMQ_CONF="$ACTIVEMQ_BASE/conf"
+ACTIVEMQ_DATA="$ACTIVEMQ_BASE/data"
+ACTIVEMQ_TMP="$ACTIVEMQ_BASE/tmp"
+
+
+ACTIVEMQ_USER=""
+ACTIVEMQ_USER="activemq"
+
+
+Copy init script to /etc/init.d using command below:
+
+cp /opt/activemq/bin/activemq /etc/init.d
+
+Change ownership of ActiveMQ init script to user and group root
+
+chown root:root /etc/init.d/activemq
+
+Set activemq to start on boot using update-rc.d
+
+
+update-rc.d activemq defaults
+
+Now let's start ActiveMQ service using command below:
+
+service activemq start
+
+ActiveMQ will show some output regarding the startup process:
+
+INFO: Loading '/etc/default/activemq'
+INFO: Using java '/usr/bin/java'
+INFO: Starting - inspect logfiles specified in logging.properties and log4j.properties to get details
+INFO: changing to user 'activemq' to invoke java
+INFO: pidfile created : '/opt/activemq/data/activemq.pid' (pid '22291')
+
+To check whether ActiveMQ is already running or not we can use command below:
+
+
+$ sudo service activemq status
+INFO: Loading '/etc/default/activemq'
+INFO: Using java '/usr/bin/java'
+ActiveMQ is running (pid '22291')
+
+Accessing ActiveMQ Web Admin
+
+
+To access the web admin we can point our browser to http://activemq-ipaddress:8161/admin
+
+It will prompt authentication form. Input admin as default username and password.
+
+
+From this web admin we can manage and monitor our ActiveMQ installation.
+
+To access the web admin we can point our browser to http://activemq-ipaddress:8161/admin
+
+It will prompt authentication form. Input admin as default username and password.
+
+
+From this web admin we can manage and monitor our ActiveMQ installation.
+
+Monitoring ActiveMQ With Hawt.io
+
+Beside using ActiveMQ default web admin we can also monitor our ActiveMQ installation using Hawt.io but we need to install Hawtio first.
+
+We can download the latest version of Hawt.io from Hawt.io Getting Stated Page.
+
+Let's download hawt.io offline .war using wget
+
+
+
+$ wget -c https://oss.sonatype.org/content/repositories/public/io/hawt/hawtio-default-offline/1.4.67/hawtio-default-offline-1.4.67.war
+
+
+Unzip downloaded .war:
+
+$ unzip hawtio-default-offline-1.4.67.war -d hawtio
+
+Move extracted war to webapps directory:
+
+mv hawtio /opt/activemq/webapps
+
+
+We need to change ACTIVEMQ_OPTS to add hawtio options. Open /etc/default/activemq
+
+Find the line:
+
+ACTIVEMQ_OPTS="$ACTIVEMQ_OPTS_MEMORY -Djava.util.logging.config.file=logging.properties -Djava.security.auth.login.config=$ACTIVEMQ_CONF/login.config"
+
+Replace with:
+
+ACTIVEMQ_OPTS="$ACTIVEMQ_OPTS_MEMORY -Djava.util.logging.config.file=logging.properties -Djava.security.auth.login.config=$ACTIVEMQ_CONF/login.config -Dhawtio.realm=activemq -Dhawtio.role=admins -Dhawtio.rolePrincipalClasses=org.apache.activemq.jaas.GroupPrincipal"
+
+Open /opt/activemq/conf/jetty.xml, find line:
+
+
+<ref bean="rewriteHandler"/>
+
+Add these line below the line.
+
+<bean class="org.eclipse.jetty.webapp.WebAppContext">
+    <property name="contextPath" value="/hawtio" />
+    <property name="resourceBase" value="${activemq.home}/webapps/hawtio" />
+    <property name="logUrlOnStart" value="true" />
+</bean>  
+
+Now restart ActiveMQ process
+
+service activemq restart
+
+Now point our browser to http://activemq-ipaddress:8161/hawtio. Login using admin as username and password.
+
+
+Hawtio Welcome Page
+
+Hawtio ActiveMQ dashboard.
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
